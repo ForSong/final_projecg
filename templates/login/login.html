@@ -1,0 +1,46 @@
+{#movie/templates/login/login.html#}
+
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}Login{% endblock %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+ 
+ 
+{% block content %}
+    <div class="container">
+        <div class="col-md-4 col-md-offset-4">
+          <form class='form-login' action="/login/" method="post">
+              {% if message %}
+                  <div class="alert alert-warning">{{ message }}</div>
+              {% endif %}
+              {% csrf_token %}
+              <h2 class="text-center">Welcome Login</h2>
+{#              <div class="form-group">#}
+{#                <label for="id_username">User：</label>#}
+{#                <input type="text" name='username' class="form-control" id="id_username" placeholder="Username" autofocus required>#}
+{#              </div>#}
+{#              <div class="form-group">#}
+{#                <label for="id_password">Password：</label>#}
+{#                <input type="password" name='password' class="form-control" id="id_password" placeholder="Password" required>#}
+{#              </div>#}
+                <div class="form-group">
+                {{ login_form.username.label_tag }}
+                {{ login_form.username}}
+                </div>
+                <div class="form-group">
+                {{ login_form.password.label_tag }}
+                {{ login_form.password }}
+                </div>
+                <div class="form-group">
+                  {{ login_form.captcha.errors }}
+                  {{ login_form.captcha.label_tag }}
+                  {{ login_form.captcha }}
+              </div>
+              <button type="reset" class="btn btn-default pull-left">Reset</button>
+              <button type="submit" class="btn btn-primary pull-right">Submit</button>
+          </form>
+        </div>
+    </div> <!-- /container -->
+{% endblock %}
