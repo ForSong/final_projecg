@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rated Movie</title>
+
+    <style>
+        h2{
+            text-align: center;
+            font-family: Georgia, serif;
+            font-weight: bold
+        }
+        li{
+            list-style: none;
+            text-align: center;
+            {#display: inline-block;#}
+        }
+    </style>
+</head>
+
+<body>
+<h2>as following：</h2>
+<br/>
+{% for dd in usermovietitle %}
+    <li>
+    <p>{{ dd }}</p>
+    </li>
+
+{%  endfor %}
+
+
+</body>
+</html>

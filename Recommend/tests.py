@@ -1,3 +1,133 @@
 from django.test import TestCase
 
 # Create your tests here.
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import numpy as np
+from collections import Counter
+import tensorflow as tf
+
+import os
+import pickle
+import re
+from tensorflow.python.ops import math_ops
+'''
+分别有用户ID、性别、年龄、职业ID和邮编等字段。
+
+数据中的格式：UserID::Gender::Age::Occupation::Zip-code
+'''
+users_title = ['UserID', 'Gender', 'Age', 'OccupationID', 'Zip-code']
+users = pd.read_table('./ml-1m/users.dat', sep='::', header=None, names=users_title, engine = 'python')
+users.head()
+'''
+分别有电影ID、电影名和电影风格等字段。
+
+数据中的格式：MovieID::Title::Genres
+'''
+movies_title = ['MovieID', 'Title', 'Genres']
+movies = pd.read_table('./ml-1m/movies.dat', sep='::', header=None, names=movies_title, engine = 'python')
+movies.head()
+
+'''
+分别有用户ID、电影ID、评分和时间戳等字段。
+
+数据中的格式：UserID::MovieID::Rating::Timestamp
+'''
+ratings_title = ['UserID','MovieID', 'Rating', 'timestamps']
+ratings = pd.read_table('./ml-1m/ratings.dat', sep='::', header=None, names=ratings_title, engine = 'python')
+ratings.head()
+
+#数据预处理
+'''
+UserID、Occupation和MovieID不用变。
+Gender字段：需要将‘F’和‘M’转换成0和1。
+Age字段：要转成7个连续数字0~6。
+Genres字段：是分类字段，要转成数字。首先将Genres中的类别转成字符串到数字的字典，然后再将每个电影的Genres字段转成数字列表，因为有些电影是多个Genres的组合。
+Title字段：处理方式跟Genres字段一样，首先创建文本到数字的字典，然后将Title中的描述转成数字的列表。另外Title中的年份也需要去掉。
+Genres和Title字段需要将长度统一，这样在神经网络中方便处理。空白部分用‘< PAD >’对应的数字填充。
+'''
+
+
+def load_data():
+    """
+    Load Dataset from File
+    """
+    # 读取User数据
+    users_title = ['UserID', 'Gender', 'Age', 'JobID', 'Zip-code']
+    users = pd.read_table('./ml-1m/users.dat', sep='::', header=None, names=users_title, engine='python')
+    users = users.filter(regex='UserID|Gender|Age|JobID')
+    users_orig = users.values
+    # 改变User数据中性别和年龄
+    gender_map = {'F': 0, 'M': 1}
+    users['Gender'] = users['Gender'].map(gender_map)
+
+    age_map = {val: ii for ii, val in enumerate(set(users['Age']))}
+    users['Age'] = users['Age'].map(age_map)
+
+    # 读取Movie数据集
+    movies_title = ['MovieID', 'Title', 'Genres']
+    movies = pd.read_table('./ml-1m/movies.dat', sep='::', header=None, names=movies_title, engine='python')
+    movies_orig = movies.values
+    # 将Title中的年份去掉
+    pattern = re.compile(r'^(.*)\((\d+)\)$')
+
+
+
+    title_map = {val: pattern.match(val).group(1) for ii, val in enumerate(set(movies['Title']))}
+    movies['Title'] = movies['Title'].map(title_map)
+
+    # 电影类型转数字字典
+    genres_set = set()
+    for val in movies['Genres'].str.split('|'):
+        genres_set.update(val)
+
+    genres_set.add('<PAD>')
+    genres2int = {val: ii for ii, val in enumerate(genres_set)}
+
+    # 将电影类型转成等长数字列表，长度是18
+    genres_map = {val: [genres2int[row] for row in val.split('|')] for ii, val in enumerate(set(movies['Genres']))}
+
+    for key in genres_map:
+        for cnt in range(max(genres2int.values()) - len(genres_map[key])):
+            genres_map[key].insert(len(genres_map[key]) + cnt, genres2int['<PAD>'])
+
+    movies['Genres'] = movies['Genres'].map(genres_map)
+
+    # 电影Title转数字字典
+    title_set = set()
+    for val in movies['Title'].str.split():
+        title_set.update(val)
+
+    title_set.add('<PAD>')
+    title2int = {val: ii for ii, val in enumerate(title_set)}
+
+    # 将电影Title转成等长数字列表，长度是15
+    title_count = 15
+    title_map = {val: [title2int[row] for row in val.split()] for ii, val in enumerate(set(movies['Title']))}
+
+    for key in title_map:
+        for cnt in range(title_count - len(title_map[key])):
+            title_map[key].insert(len(title_map[key]) + cnt, title2int['<PAD>'])
+
+    movies['Title'] = movies['Title'].map(title_map)
+
+    # 读取评分数据集
+    ratings_title = ['UserID', 'MovieID', 'ratings', 'timestamps']
+    ratings = pd.read_table('./ml-1m/ratings.dat', sep='::', header=None, names=ratings_title, engine='python')
+    ratings = ratings.filter(regex='UserID|MovieID|ratings')
+
+    # 合并三个表
+    data = pd.merge(pd.merge(ratings, users), movies)
+
+    # 将数据分成X和y两张表
+    target_fields = ['ratings']
+    features_pd, targets_pd = data.drop(target_fields, axis=1), data[target_fields]
+
+    features = features_pd.values
+    targets_values = targets_pd.values
+
+    return title_count, title_set, genres2int, features, targets_values, ratings, users, movies, data, movies_orig, users_orig
+
+title_count, title_set, genres2int, features, targets_values, ratings, users, movies, data, movies_orig, users_orig = load_data()
+
+pickle.dump((title_count, title_set, genres2int, features, targets_values, ratings, users, movies, data, movies_orig, users_orig), open('preprocess.p', 'wb'))

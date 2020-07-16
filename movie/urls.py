@@ -19,13 +19,16 @@ from Recommend import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('',views.index),
     path('index/',views.index),
     path('login/',views.login),
     path('register/', views.register),
     path('logout/', views.logout),
     path('captcha', include('captcha.urls')),
     path('ind/', views.main_movie),
-    path('movieRecommend', views.recommend1),
+    path('ind/movieRecommend/', views.recommend1),
+    path('showmessage/',views.showmessage,name='showmessage'),
+    path('insert/', views.insert),
 
 
 ]

@@ -100,14 +100,51 @@ def main_movie(request):
     pass
     return render(request, 'ind.html')
 
+def showmessage(request):
+    usermovieid = []
+    usermovietitle = []
+    data=Resulttable.objects.filter(userId=1001)
+    for row in data:
+        usermovieid.append(row.imdbId)
+
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        #Insertposter.objects.filter(userId=USERID).delete()
+        for i in usermovieid:
+            cur.execute('select * from moviegenre3 where imdbId = %s',i)
+            rr = cur.fetchall()
+            for imdbId,title,poster in rr:
+                usermovietitle.append(title)
+                print(title)
+
+        # print(poster_result)
+    finally:
+        conn.close()
+    return render(request, 'login/message.html', locals())
+
+def insert(request):
+    # MOVIEID = int(request.GET["movieId"])
+    global USERID
+    USERID = int(request.GET["userId"])+1000
+    # USERID = {{}}
+    RATING = float(request.GET["rating"])
+    IMDBID = int(request.GET["imdbId"])
+
+    Resulttable.objects.create(userId=USERID, rating=RATING,imdbId=IMDBID)
+    #print(USERID)
+    # return HttpResponseRedirect('/')
+    return render(request, 'ind.html',{'userId':USERID,'rating':RATING,'imdbId':IMDBID})
+
 
 ## 将基于用户的推荐转到前端
 def recommend1(request):
-    USERID = int(request.GET["userIdd"]) + 1000
-    Insertposter.objects.filter(userId=USERID).delete()
+    # USERID = int(request.GET["userIdd"]) + 1000
+    USERID=1002
+    # Insertposter.objects.filter(userId=USERID).delete()
     #selectMysql()
-    read_to_csv('Recommend/static/users_resulttable.csv',USERID)  #追加数据，提高速率
-    ratingfile = os.path.join('Recommend/static', 'users_resulttable.csv')
+    read_to_csv('Recommend_resulttable.csv',USERID)  #追加数据，提高速率
+    ratingfile = os.path.join('static', 'Recommend_resulttable.csv')
     usercf = UserBasedCF()
     #userid = '1001'
     userid = str(USERID)#得到了当前用户的id
@@ -122,9 +159,9 @@ def recommend1(request):
     try:
         conn = get_conn()
         cur = conn.cursor()
-        #Insertposter.objects.filter(userId=USERID).delete()
+        Insertposter.objects.filter(userId=USERID).delete()
         for i in matrix:
-            cur.execute('select * from moviegenre3 where imdbId = %s',i)
+            cur.execute('select * from MovieGenre where imdbId = %s',i)
             rr = cur.fetchall()
             for imdbId,title,poster in rr:
                 #print(value)         #value才是真正的海报链接
@@ -138,56 +175,15 @@ def recommend1(request):
         conn.close()
     #results = Insertposter.objects.all()       #从这里传递给html= Insertposter.objects.all()  # 从这里传递给html
     results = Insertposter.objects.filter(userId=USERID)
-    return render(request,'users/movieRecommend.html', locals())
+    return render(request,'basedMovie/movieRecommend.html', locals())
     # return render(request, 'users/..//index.html', locals())
-
-# def recommend2(request):
-#     # USERID = int(request.GET["userIddd"]) + 1000
-#     USERID = 1001
-#     Insertposter.objects.filter(userId=USERID).delete()
-#     #selectMysql()
-#     read_to_csv2('users/static/users_resulttable2.csv',USERID)  #追加数据，提高速率
-#     ratingfile2 = os.path.join('users/static', 'users_resulttable2.csv')
-#     itemcf = ItemBasedCF()
-#     #userid = '1001'
-#     userid = str(USERID)#得到了当前用户的id
-#     print(userid)
-#     itemcf.generate_dataset(ratingfile2)
-#     itemcf.calc_movie_sim()
-#     itemcf.recommend(userid)    #得到imdbId号
-#
-#     #先删除所有数据
-#
-#
-#     try:
-#         conn = get_conn()
-#         cur = conn.cursor()
-#         #Insertposter.objects.filter(userId=USERID).delete()
-#         for i in matrix2:
-#             cur.execute('select * from moviegenre3 where imdbId = %s',i)
-#             rr = cur.fetchall()
-#             for imdbId,title,poster in rr:
-#                 #print(value)         #value才是真正的海报链接
-#                 if(Insertposter.objects.filter(title=title)):
-#                     continue
-#                 else:
-#                     Insertposter.objects.create(userId=USERID, title=title, poster=poster)
-#
-#         # print(poster_result)
-#     finally:
-#         conn.close()
-#         results = Insertposter.objects.filter(userId=USERID)       #从这里传递给html= Insertposter.objects.all()  # 从这里传递给html
-#
-#     return render(request, 'users/movieRecommend2.html',locals())
-#     # return HttpResponseRedirect('movieRecommend.html', locals())
-
 
 
 import sqlite3
 import csv
 import codecs
 def get_conn():
-    conn = sqlite3.connect(host='127.0.0.1', port=3307, user='root', passwd='123456789.', db='db', charset='utf8')
+    conn = sqlite3.connect('db.sqlite3')
     return conn
 
 def query_all(cur, sql, args):
@@ -198,7 +194,7 @@ def read_to_csv(filename,user):
         write = csv.writer(f, dialect='excel')
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute('select * from users_resulttable')
+        cur.execute('select * from Recommend_resulttable')
         #sql = ('select * from users_resulttable WHERE userId = 1001')
         rr = cur.fetchall()
         #results = query_all(cur=cur, sql=sql, args=None)
@@ -207,18 +203,6 @@ def read_to_csv(filename,user):
             write.writerow(result[:-1])
 
 
-def read_to_csv2(filename,user):
-    with codecs.open(filename=filename, mode='a', encoding='utf-8') as f:
-        write = csv.writer(f, dialect='excel')
-        conn = get_conn()
-        cur = conn.cursor()
-        cur.execute('select * from users_resulttable')
-        sql = ('select * from users_resulttable WHERE userId = 1001')
-        rr = cur.fetchall()
-        results = query_all(cur=cur, sql=sql, args=None)
-        for result in results:
-            #print(result)
-            write.writerow(result[:-1])
 
 import sys
 import random
@@ -267,7 +251,7 @@ class UserBasedCF(object):
             self.initialset[users][movies] = (ratings)
             initialset_len += 1
 
-    def generate_dataset(self, filename2, pivot=1.0):
+    def generate_dataset(self, filename2, pivot=0.7):
         ''' load rating data and split it to training set and test set '''
         trainset_len = 0
         testset_len = 0
@@ -398,4 +382,21 @@ class ItemBasedCF(object):
 
 
 
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import numpy as np
+from collections import Counter
 
+if __name__ == '__main__':
+    # ratingfile = os.path.join('ml-1m', 'ratings.dat')
+    # ratingfile1 = os.path.join('ml-100k', 'insertusers.csv')
+    ratingfile2 = os.path.join('../static', 'Recommend_resulttable.csv')
+    #ratingfile2 = os.path.join('static', 'rrtotaltable.csv')
+
+    usercf = UserBasedCF()
+    userId = '1'
+    # usercf.initial_dataset(ratingfile1)
+    usercf.generate_dataset(ratingfile2)
+    usercf.calc_user_sim()
+    # usercf.evaluate()
+    usercf.recommend(userId)

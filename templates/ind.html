@@ -125,9 +125,11 @@
 {##}
 {#    </div>#}
 {#</div>#}
-
-
-
+<div class="flex-center">
+    <div class="container_">
+        <p>您已登录，欢迎您：<a href="{% url 'showmessage' %}">member </a></p>
+    </div>
+</div>
 <br/>
 
    <form action="/insert/" method="get" target="nm_iframe">
@@ -225,7 +227,7 @@
 </div>
 
 
-        <form action="users/recommend1/" method="get">
+        <form action="movieRecommend/" method="get">
             {% csrf_token %}
 {#            name：<input type="text" name="name">#}
 {#            <hr/>#}

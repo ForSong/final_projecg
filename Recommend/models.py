@@ -5,8 +5,8 @@ class User(models.Model):
     '''用户表'''
 
     gender = (
-        ('male', '男'),
-        ('female', '女'),
+        ('male', 'M'),
+        ('female', 'W'),
     )
 
     name = models.CharField(max_length=128, unique=True)
@@ -23,10 +23,20 @@ class User(models.Model):
         verbose_name = '用户'
         verbose_name_plural = '用户'
 
+class DbUser(models.Model):
+    userId = models.IntegerField()
+    gender = (
+        ('male', 'M'),
+        ('female', 'W'),
+    )
+    age = models.IntegerField()
+    occupationId = models.IntegerField()
+    zipId = models.IntegerField()
+
 
 class Resulttable(models.Model):
     # movieId = models.IntegerField(null=True)  # Field name made lowercase.
-    userId = models.IntegerField(null=True)  # Field name made lowercase.
+    userId = models.IntegerField(max_length=200, primary_key=True)  # Field name made lowercase.
     imdbId = models.IntegerField()  # Field name made lowercase.
     rating = models.DecimalField(max_digits=3, decimal_places=1, blank=True, null=True)
     # title = models.CharField(max_length=50, blank=True, null=True)
